@@ -2,6 +2,223 @@
 
 ![nanochat logo](dev/nanochat.png)
 
+# nanochat - RTX 5090 Single GPU Fork
+
+This fork adds optimized configurations and documentation for training nanochat on single GPU systems, specifically tested on NVIDIA RTX 5090.
+
+## Fork Additions
+
+### 🚀 Single GPU Training Scripts
+- `speedrun_rtx5090.sh` - Optimized training pipeline for RTX 5090 (depth=16, 370M params)
+- `train_big_model.sh` - Extended training for 740M parameter model (depth=24)
+
+### 📊 Performance Benchmarks (RTX 5090)
+- **Depth=16 (370M)**: ~80k tokens/sec, completes in ~30 hours
+- **Depth=24 (740M)**: ~57k tokens/sec, ~50 hours with proper iterations
+
+### 🛠️ Key Modifications
+- Removed muon optimizer requirements for single GPU compatibility
+- Adjusted batch sizes for 32GB VRAM optimization
+- Added extended training iterations for better model quality
+
+### 📈 Training Results
+- Successfully trained 370M model achieving 0.11 CORE score
+- Currently training 740M model with 20k iterations
+
+## 🚀 Quick Start for RTX 5090
+
+### Training a 370M Parameter Model (depth=16)
+```bash
+# Clone this fork
+git clone https://github.com/kylefoxaustin/nanochat.git
+cd nanochat
+
+# Run the optimized RTX 5090 training pipeline
+chmod +x speedrun_rtx5090.sh
+./speedrun_rtx5090.sh
+```
+**Expected runtime**: ~30 hours total
+**VRAM usage**: ~18GB
+
+### Training a 740M Parameter Model (depth=24)
+```bash
+# Ensure you have 150 data shards first
+python -m nanochat.dataset -n 150
+
+# Run the extended training script
+chmod +x train_big_model.sh
+./train_big_model.sh
+```
+**Expected runtime**: ~50-55 hours total
+**VRAM usage**: ~25GB
+
+### Hardware Requirements
+- NVIDIA RTX 5090 (32GB VRAM) or similar
+- 96GB+ system RAM recommended
+- ~50GB storage for data shards
+- Ubuntu 22.04+ with CUDA 13.0+
+
+### What These Scripts Do
+1. **speedrun_rtx5090.sh**: Modified version of original speedrun.sh
+   - Optimized batch sizes for single GPU
+   - Removed distributed training dependencies
+   - Complete pipeline: base training → midtraining → SFT
+
+2. **train_big_model.sh**: For ambitious single-GPU training
+   - 20,000 iterations for proper convergence
+   - Larger batch accumulation for stability
+   - Produces a model approaching GPT-2 quality
+
+### 🔧 Troubleshooting
+
+#### Common Issues and Solutions
+
+**1. CUDA Out of Memory**
+```bash
+# Reduce batch size in the scripts
+--device_batch_size=2  # or even 1 if needed
+```
+
+**2. "Unknown config key: use_muon" Error**
+- Already fixed in these scripts by removing the --muon flag
+- If modifying, avoid bare flags without values
+
+**3. FileNotFoundError for checkpoints**
+- This happens if continuing from a previous run
+- Clear old checkpoints: `rm -rf ~/.cache/nanochat/*_checkpoints`
+
+**4. NaN Loss Issues**
+- The scripts use conservative learning rates to prevent this
+- If it occurs, check that you're using the exact parameters in the scripts
+
+**5. Python/Module Not Found**
+```bash
+# Always activate the virtual environment first
+source .venv/bin/activate
+# Use python3 if python command not found
+alias python=python3
+```
+
+**6. Slow Training / Low GPU Utilization**
+```bash
+# Check GPU status
+nvidia-smi
+# Ensure no other processes are using GPU
+# Temperature should be 60-70°C under load
+```
+
+**7. Data Download Issues**
+```bash
+# If data download is interrupted
+python -m nanochat.dataset -n 150  # Will skip existing files
+```
+
+### 📊 Expected Metrics During Training
+- **Starting loss**: ~11.0
+- **Good progress**: Loss dropping by ~0.1 every 100 steps
+- **Healthy GPU**: 90%+ utilization, 60-70°C
+- **Token rate**: 80k+ for depth=16, 57k+ for depth=24
+
+### 📈 Monitoring Training Progress
+
+#### Real-time Monitoring
+```bash
+# Watch training in real-time
+tail -f screenlog.0  # if using screen
+# or just watch the terminal output directly
+```
+
+#### Key Metrics to Watch
+- **Loss**: Should steadily decrease from ~11.0 to ~3.0
+- **Tokens/sec**: Consistent rate indicates healthy training
+- **MFU (Model FLOPs Utilization)**: 15-17 is excellent
+- **Validation bpb**: Lower is better (bits per byte)
+
+#### Check GPU Status
+```bash
+# Monitor GPU usage and temperature
+watch -n 2 nvidia-smi
+
+# Healthy indicators:
+# - GPU Utilization: 90%+
+# - Memory Usage: 18-25GB (depending on model)
+# - Temperature: 60-70°C
+# - Power: 350-450W
+```
+
+#### Training Checkpoints
+```bash
+# View saved checkpoints
+ls ~/.cache/nanochat/base_checkpoints/
+ls ~/.cache/nanochat/chatsft_checkpoints/
+
+# Backup important checkpoints
+cp -r ~/.cache/nanochat/*_checkpoints /mnt/backup/
+```
+
+#### Estimate Completion Time
+- **Depth=16**: ~800ms/step × 102,400 steps ÷ 3600 = ~23 hours
+- **Depth=24**: ~9s/step × 20,000 steps ÷ 3600 = ~50 hours
+
+#### If Training Crashes
+```bash
+# Models auto-save every 300 steps
+# To resume, check the latest checkpoint:
+ls ~/.cache/nanochat/base_checkpoints/*/model_*.pt
+# Modify training script to resume from checkpoint (advanced)
+```
+
+#### Testing Your Model
+```bash
+# Quick test after training
+python -m scripts.chat_cli -p "Hello, how are you?"
+
+# Full web interface
+python -m scripts.chat_web
+# Visit http://localhost:8000
+```
+
+---
+
+## 🤝 Contributing
+
+This fork is maintained by [@kylefoxaustin](https://github.com/kylefoxaustin). Contributions are welcome!
+
+If you:
+- Have improvements for single-GPU training
+- Find optimizations for other GPU models
+- Want to share your training results
+- Have bug fixes or documentation improvements
+
+Please feel free to:
+1. Open an issue to discuss your idea
+2. Submit a pull request with your changes
+3. Share your benchmarks in the discussions
+
+## 📊 Community Benchmarks
+
+Have you successfully trained on different hardware? Please share your results!
+
+| GPU | Model Size | Tokens/sec | Training Time | VRAM Usage | Contributor |
+|-----|------------|------------|---------------|------------|-------------|
+| RTX 5090 | 370M (d16) | 80k | 30 hours | 18GB | @kylefoxaustin |
+| RTX 5090 | 740M (d24) | 57k | 50 hours | 25GB | @kylefoxaustin |
+| *Your GPU* | *Your results* | *PR welcome!* | | | |
+
+## 📄 License
+
+This fork maintains the original MIT license. See [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Original nanochat by [@karpathy](https://github.com/karpathy)
+- RTX 5090 single-GPU optimizations by [@kylefoxaustin](https://github.com/kylefoxaustin)
+- Thanks to the nanochat community for inspiration and support!
+
+
+---
+
+From the original karpathy/nanochat repository's README
 > The best ChatGPT that $100 can buy.
 
 This repo is a full-stack implementation of an LLM like ChatGPT in a single, clean, minimal, hackable, dependency-lite codebase. nanochat is designed to run on a single 8XH100 node via scripts like [speedrun.sh](speedrun.sh), that run the entire pipeline start to end. This includes tokenization, pretraining, finetuning, evaluation, inference, and web serving over a simple UI so that you can talk to your own LLM just like ChatGPT. nanochat will become the capstone project of the course LLM101n being developed by Eureka Labs.
