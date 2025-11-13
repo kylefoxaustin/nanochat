@@ -2,14 +2,15 @@
 echo "Starting 740M parameter model training!"
 source .venv/bin/activate
 
-# Base training - depth 24
+# Base training - depth 24 with proper iterations
 echo "Phase 1: Base training (depth=24)..."
 python -m scripts.base_train \
     --depth=24 \
     --device_batch_size=4 \
-    --total_batch_size=65536
+    --total_batch_size=65536 \
+    --num_iterations=20000
 
-# Midtraining  
+# Midtraining
 echo "Phase 2: Midtraining..."
 python -m scripts.mid_train \
     --device_batch_size=4
