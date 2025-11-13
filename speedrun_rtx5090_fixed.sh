@@ -2,12 +2,6 @@
 # RTX 5090 single GPU training script - adapted from speedrun.sh
 # Targets a sweet spot between the CPU demo and 8xH100 full run
 
-# Add paths for uv and cargo
-export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
-
-# Use python3 explicitly
-alias python=python3
-
 export OMP_NUM_THREADS=1
 export NANOCHAT_BASE_DIR="$HOME/.cache/nanochat"
 mkdir -p $NANOCHAT_BASE_DIR
@@ -35,6 +29,7 @@ python -m scripts.base_train \
     --depth=16 \
     --device_batch_size=8 \
     --total_batch_size=$((32 * 2048)) \
+    --muon
 
 # Midtraining
 python -m scripts.mid_train \
