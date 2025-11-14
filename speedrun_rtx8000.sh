@@ -26,11 +26,14 @@ python -m scripts.tok_train &
 wait
 
 # Base training with RTX 8000 optimized parameters
+# IMPORTANT: num_iterations=7080 keeps training time to ~60-70 hours
+# Without this flag, it defaults to 56,640 iterations (17+ days!)
 echo "Starting base training (depth=12, FP32)..."
 python -m scripts.base_train \
     --depth=12 \
     --device_batch_size=1 \
     --total_batch_size=65536 \
+    --num_iterations=7080 \
     --matrix_lr=0.005 \
     --embedding_lr=0.001 \
     --unembedding_lr=0.0001 \
