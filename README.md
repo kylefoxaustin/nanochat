@@ -4,30 +4,38 @@
 
 # nanochat - RTX 5090 Single GPU Fork
 
-This fork adds optimized configurations and documentation for training nanochat on single GPU systems, specifically tested on NVIDIA RTX 5090.
+This fork adds optimized configurations and documentation for training nanochat on single GPU systems, specifically tested on NVIDIA RTX 5090 and RTX 8000.
 
 ## Fork Additions
 
 ### 🚀 Single GPU Training Scripts
 - `speedrun_rtx5090.sh` - Optimized training pipeline for RTX 5090 (depth=16, 370M params)
+- `speedrun_rtx8000.sh` - FP32 training pipeline for RTX 8000 (depth=12, 185M params)
 - `train_big_model.sh` - Extended training for 740M parameter model (depth=24)
 
-### 📊 Performance Benchmarks (RTX 5090)
-- **Depth=16 (370M)**: ~80k tokens/sec, completes in ~30 hours
-- **Depth=24 (740M)**: ~57k tokens/sec, ~50 hours with proper iterations
+### 📊 Performance Benchmarks
+- **RTX 5090 Depth=16 (370M)**: ~80k tokens/sec, completes in ~30 hours
+- **RTX 5090 Depth=24 (740M)**: ~57k tokens/sec, ~50 hours with proper iterations
+- **RTX 8000 Depth=12 (185M)**: ~1.3k tokens/sec, ~60-70 hours (FP32 mode)
 
 ### 🛠️ Key Modifications
 - Removed muon optimizer requirements for single GPU compatibility
-- Adjusted batch sizes for 32GB VRAM optimization
+- Adjusted batch sizes for VRAM optimization (32GB for RTX 5090, 48GB for RTX 8000)
 - Added extended training iterations for better model quality
+- RTX 8000 uses proven learning rates to prevent NaN issues in FP32
 
 ### 📈 Training Results
 - Successfully trained 370M model achieving 0.11 CORE score
+- RL fine-tuning completed for improved response quality
 - Currently training 740M model with 20k iterations
 
-## 🚀 Quick Start for RTX 5090
+---
 
-### Training a 370M Parameter Model (depth=16)
+## 🚀 Quick Start
+
+### Training on RTX 5090
+
+#### 370M Parameter Model (depth=16)
 ```bash
 # Clone this fork
 git clone https://github.com/kylefoxaustin/nanochat.git
@@ -40,7 +48,7 @@ chmod +x speedrun_rtx5090.sh
 **Expected runtime**: ~30 hours total
 **VRAM usage**: ~18GB
 
-### Training a 740M Parameter Model (depth=24)
+#### 740M Parameter Model (depth=24)
 ```bash
 # Ensure you have 150 data shards first
 python -m nanochat.dataset -n 150
@@ -52,9 +60,25 @@ chmod +x train_big_model.sh
 **Expected runtime**: ~50-55 hours total
 **VRAM usage**: ~25GB
 
+### Training on RTX 8000
+
+#### 185M Parameter Model (depth=12)
+```bash
+# Clone this fork
+git clone https://github.com/kylefoxaustin/nanochat.git
+cd nanochat
+
+# Run the RTX 8000 FP32 training pipeline
+chmod +x speedrun_rtx8000.sh
+./speedrun_rtx8000.sh
+```
+**Expected runtime**: ~60-70 hours total
+**VRAM usage**: ~20GB
+**Note**: Uses FP32 precision with conservative learning rates to prevent NaN issues
+
 ### Hardware Requirements
-- NVIDIA RTX 5090 (32GB VRAM) or similar
-- 96GB+ system RAM recommended
+- **For RTX 5090**: NVIDIA RTX 5090 (32GB VRAM), 96GB+ system RAM
+- **For RTX 8000**: NVIDIA RTX 8000 (48GB VRAM), 64GB+ system RAM
 - ~50GB storage for data shards
 - Ubuntu 22.04+ with CUDA 13.0+
 
@@ -64,7 +88,12 @@ chmod +x train_big_model.sh
    - Removed distributed training dependencies
    - Complete pipeline: base training → midtraining → SFT
 
-2. **train_big_model.sh**: For ambitious single-GPU training
+2. **speedrun_rtx8000.sh**: FP32-specific implementation
+   - Conservative learning rates (matrix_lr=0.005, embedding_lr=0.001)
+   - Gradient clipping for stability
+   - Designed for older GPU architectures without BF16 support
+
+3. **train_big_model.sh**: For ambitious single-GPU training
    - 20,000 iterations for proper convergence
    - Larger batch accumulation for stability
    - Produces a model approaching GPT-2 quality
