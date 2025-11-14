@@ -49,6 +49,16 @@ chmod +x speedrun_rtx5090.sh
 **VRAM usage**: ~18GB
 
 #### 740M Parameter Model (depth=24)
+## train_big_model.sh
+- Extended training for 740M parameter model (depth=24)
+- Complete 4-phase pipeline: Base → Midtraining → SFT → **RL**
+- 20,000 iterations for proper convergence
+- Includes reinforcement learning for improved response quality
+- Produces a model approaching GPT-2 quality
+- Note:  I ran this on RTX8000 and the estimated time to complete was 17 Days...
+
+### Usage:
+
 ```bash
 # Ensure you have 150 data shards first
 python -m nanochat.dataset -n 150
@@ -57,8 +67,21 @@ python -m nanochat.dataset -n 150
 chmod +x train_big_model.sh
 ./train_big_model.sh
 ```
-**Expected runtime**: ~50-55 hours total
-**VRAM usage**: ~25GB
+
+**Expected runtime:** ~55-60 hours total (Base: ~50h, Mid: ~2h, SFT: ~2h, RL: ~3h)
+**VRAM usage:** ~25GB
+
+### Training Phases:
+
+1. **Base Training** (20,000 steps): Teaches the model language fundamentals
+2. **Midtraining**: Adds instruction-following capabilities
+3. **SFT** (Supervised Fine-Tuning): Optimizes for conversational interactions
+4. **RL** (Reinforcement Learning): Reinforces high-quality responses and reasoning
+
+The RL phase typically improves:
+- Mathematical reasoning (GSM8K scores)
+- Complex instruction following
+- Overall response quality and coherence
 
 ### Training on RTX 8000
 
