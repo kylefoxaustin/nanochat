@@ -20,8 +20,14 @@ echo "Phase 3: SFT (chat fine-tuning)..."
 python -m scripts.chat_sft \
     --device_batch_size=2
 
+# RL (Reinforcement Learning)
+echo "Phase 4: RL (reinforcement learning)..."
+python -m scripts.chat_rl \
+    --device_batch_size=2 \
+    --source=sft
+
 # Generate report
 python -m nanochat.report generate
 
-echo "740M parameter model complete! 🎉"
+echo "740M parameter model complete with RL! 🎉"
 echo "Run 'python -m scripts.chat_web' to chat with your new AI!"
