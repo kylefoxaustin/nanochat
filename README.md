@@ -2,9 +2,9 @@
 
 ![nanochat logo](dev/nanochat.png)
 
-# nanochat - RTX 5090 Single GPU Fork
+# nanochat - RTX 5090 Single GPU Fork + Windows 11 CPU Support
 
-This fork adds optimized configurations and documentation for training nanochat on single GPU systems, specifically tested on NVIDIA RTX 5090 and RTX 8000.
+This fork adds optimized configurations and documentation for training nanochat on single GPU systems (specifically tested on NVIDIA RTX 5090 and RTX 8000) and full Windows 11 CPU-only training support.
 
 ## Fork Additions
 
@@ -13,14 +13,39 @@ This fork adds optimized configurations and documentation for training nanochat 
 - `speedrun_rtx8000.sh` - FP32 training pipeline for RTX 8000 (depth=12, 185M params)
 - `train_big_model.sh` - Extended training for 740M parameter model (depth=24)
 
+### 💻 Windows 11 CPU Training Scripts
+- `train_340M_menu.py` - Interactive menu-driven training for 304M parameter model
+- `train_340M_full.py` - Full 304M model training
+- `train_340M_ultimate.py` - Extended configuration
+- `train_cpu_simple_final.py` - Simplified CPU training
+- `train_full_nanochat_cpu.py` - Standard nanochat CPU version
+- `train_full_nanochat_final.py` - Final nanochat implementation
+- `train_full_real_data.py` - Training with real datasets
+- `train_full_real_data_fixed.py` - Fixed real data training
+- `train_nanochat_cpu.py` - Basic CPU training
+- `train_nanochat_final.py` - Final standard training
+- `train_real_data_final.py` - Production data training
+- `fix_final_tokenizer.py` - Tokenizer utilities
+
 ### 📊 Performance Benchmarks
+
+#### GPU Performance
 - **RTX 5090 Depth=16 (370M)**: ~80k tokens/sec, completes in ~30 hours
 - **RTX 5090 Depth=24 (740M)**: ~57k tokens/sec, ~50 hours with proper iterations
 - **RTX 8000 Depth=12 (185M)**: ~1.3k tokens/sec, ~60-70 hours (FP32 mode)
 
+#### CPU Performance (Windows 11)
+- **64M Model**: ~770 tokens/sec, ~4 hours for 10k iterations
+- **304M Model**: ~64 tokens/sec, ~52-58 hours for 100k iterations
+- Memory usage: 2-3GB RAM (64M), 5-6GB RAM (304M)
+- No VRAM required
+
 ### 🛠️ Key Modifications
 - Removed muon optimizer requirements for single GPU compatibility
-- Adjusted batch sizes for VRAM optimization (32GB for RTX 5090, 48GB for RTX 8000)
+- Added Windows 11 CPU-only training support with no CUDA dependencies
+- Automatic GPT-2 tokenizer fallback for Windows compatibility
+- Interactive menu system for easy training configuration
+- Adjusted batch sizes for VRAM/RAM optimization
 - Added extended training iterations for better model quality
 - RTX 8000 uses proven learning rates to prevent NaN issues in FP32
 
@@ -31,7 +56,86 @@ This fork adds optimized configurations and documentation for training nanochat 
 
 ---
 
-## 🚀 Quick Start
+## 🪟 Windows 11 CPU Training
+
+### Prerequisites
+- Windows 11
+- Python 3.11 or later
+- Git
+- 8GB+ RAM (16GB+ recommended)
+
+### Windows Setup
+
+1. **Clone the repository**
+```powershell
+git clone https://github.com/kylefoxaustin/nanochat.git
+cd nanochat
+git checkout windows-11-cpu-support
+```
+
+2. **Create virtual environment**
+```powershell
+python -m venv venv
+venv\Scripts\activate
+```
+
+3. **Install PyTorch CPU version**
+```powershell
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+```
+
+4. **Install other dependencies**
+```powershell
+pip install transformers datasets wandb tqdm numpy pandas pyarrow
+```
+
+### Windows Training Options
+
+#### Interactive Menu System (Recommended)
+```powershell
+python train_340M_menu.py
+```
+Offers 5 training configurations:
+1. Test Run (100 iterations) - ~3 minutes
+2. Quick Training (1,000 iterations) - ~30 minutes
+3. Standard Training (10,000 iterations) - ~5 hours
+4. Full Training (100,000 iterations) - ~52 hours
+5. Custom (specify your own parameters)
+
+#### Direct Script Execution
+```powershell
+# For 304M model
+python train_340M_full.py
+
+# For 64M model
+python train_full_nanochat_cpu.py
+
+# For real data training
+python train_real_data_final.py
+```
+
+### Windows Checkpointing
+Checkpoints automatically save to:
+```
+C:\Users\[username]\.cache\nanochat\340M_checkpoints\
+```
+
+Files saved:
+- `checkpoint_iter_[N].pt` - Model weights
+- `optimizer_iter_[N].pt` - Optimizer state
+- `training_state_iter_[N].json` - Training metadata
+
+### Windows-Specific Notes
+- Scripts automatically fall back to GPT-2 tokenizer if default fails
+- All paths use Windows-compatible formatting
+- SSL certificate issues can be resolved with:
+  ```powershell
+  pip config set global.trusted-host "pypi.org files.pythonhosted.org download.pytorch.org"
+  ```
+
+---
+
+## 🚀 GPU Quick Start
 
 ### Training on RTX 5090
 
@@ -49,7 +153,6 @@ chmod +x speedrun_rtx5090.sh
 **VRAM usage**: ~18GB
 
 #### 740M Parameter Model (depth=24)
-## train_big_model.sh
 - Extended training for 740M parameter model (depth=24)
 - Complete 4-phase pipeline: Base → Midtraining → SFT → **RL**
 - 20,000 iterations for proper convergence
@@ -121,9 +224,11 @@ chmod +x speedrun_rtx8000.sh
    - Larger batch accumulation for stability
    - Produces a model approaching GPT-2 quality
 
-### 🔧 Troubleshooting
+---
 
-#### Common Issues and Solutions
+## 🔧 Troubleshooting
+
+### Common GPU Issues
 
 **1. CUDA Out of Memory**
 ```bash
@@ -165,28 +270,57 @@ nvidia-smi
 python -m nanochat.dataset -n 150  # Will skip existing files
 ```
 
-### 📊 Expected Metrics During Training
+### Common Windows CPU Issues
+
+**1. Import Errors**
+```powershell
+# Ensure virtual environment is activated
+venv\Scripts\activate
+```
+
+**2. Memory Errors**
+```python
+# Reduce batch size in training script
+batch_size = 4  # Reduce from 8
+```
+
+**3. Tokenizer Errors**
+- Scripts automatically fall back to GPT-2 tokenizer
+- No manual intervention needed
+
+**4. Line Ending Warnings in Git**
+- Normal on Windows when committing
+- Git handles CRLF/LF conversion automatically
+- Safe to ignore
+
+---
+
+## 📊 Expected Metrics During Training
 - **Starting loss**: ~11.0
 - **Good progress**: Loss dropping by ~0.1 every 100 steps
 - **Healthy GPU**: 90%+ utilization, 60-70°C
 - **Token rate**: 80k+ for depth=16, 57k+ for depth=24
 
-### 📈 Monitoring Training Progress
+## 📈 Monitoring Training Progress
 
-#### Real-time Monitoring
+### Real-time Monitoring
 ```bash
-# Watch training in real-time
+# Linux/GPU
 tail -f screenlog.0  # if using screen
-# or just watch the terminal output directly
+
+# Windows/CPU - watch terminal directly or:
+# Training outputs to console and training_log.txt
 ```
 
-#### Key Metrics to Watch
-- **Loss**: Should steadily decrease from ~11.0 to ~3.0
+### Key Metrics to Watch
+- **Loss**: Should steadily decrease from ~11.0 to target
 - **Tokens/sec**: Consistent rate indicates healthy training
-- **MFU (Model FLOPs Utilization)**: 15-17 is excellent
+- **MFU (Model FLOPs Utilization)**: 15-17 is excellent (GPU only)
 - **Validation bpb**: Lower is better (bits per byte)
+- **Progress %**: Shows completion status
+- **ETA**: Estimated time remaining
 
-#### Check GPU Status
+### Check GPU Status
 ```bash
 # Monitor GPU usage and temperature
 watch -n 2 nvidia-smi
@@ -198,7 +332,7 @@ watch -n 2 nvidia-smi
 # - Power: 350-450W
 ```
 
-#### Training Checkpoints
+### Training Checkpoints
 ```bash
 # View saved checkpoints
 ls ~/.cache/nanochat/base_checkpoints/
@@ -208,11 +342,11 @@ ls ~/.cache/nanochat/chatsft_checkpoints/
 cp -r ~/.cache/nanochat/*_checkpoints /mnt/backup/
 ```
 
-#### Estimate Completion Time
+### Estimate Completion Time
 - **Depth=16**: ~800ms/step × 102,400 steps ÷ 3600 = ~23 hours
 - **Depth=24**: ~9s/step × 20,000 steps ÷ 3600 = ~50 hours
 
-#### If Training Crashes
+### If Training Crashes
 ```bash
 # Models auto-save every 300 steps
 # To resume, check the latest checkpoint:
@@ -220,7 +354,7 @@ ls ~/.cache/nanochat/base_checkpoints/*/model_*.pt
 # Modify training script to resume from checkpoint (advanced)
 ```
 
-#### Testing Your Model
+### Testing Your Model
 ```bash
 # Quick test after training
 python -m scripts.chat_cli -p "Hello, how are you?"
@@ -237,8 +371,8 @@ python -m scripts.chat_web
 This fork is maintained by [@kylefoxaustin](https://github.com/kylefoxaustin). Contributions are welcome!
 
 If you:
-- Have improvements for single-GPU training
-- Find optimizations for other GPU models
+- Have improvements for single-GPU or CPU training
+- Find optimizations for other hardware configurations
 - Want to share your training results
 - Have bug fixes or documentation improvements
 
@@ -251,22 +385,14 @@ Please feel free to:
 
 Have you successfully trained on different hardware? Please share your results!
 
-| GPU | Model Size | Tokens/sec | Training Time | VRAM Usage | Contributor |
-|-----|------------|------------|---------------|------------|-------------|
-| RTX 5090 | 370M (d16) | 80k | 30 hours | 18GB | @kylefoxaustin |
-| RTX 5090 | 740M (d24) | 57k | 50 hours | 25GB | @kylefoxaustin |
-| *Your GPU* | *Your results* | *PR welcome!* | | | |
-
-## 📄 License
-
-This fork maintains the original MIT license. See [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Original nanochat by [@karpathy](https://github.com/karpathy)
-- RTX 5090 single-GPU optimizations by [@kylefoxaustin](https://github.com/kylefoxaustin)
-- Thanks to the nanochat community for inspiration and support!
-
+| Hardware | Model Size | Tokens/sec | Training Time | Memory Usage | Platform | Contributor |
+|----------|------------|------------|---------------|--------------|----------|-------------|
+| RTX 5090 | 370M (d16) | 80k | 30 hours | 18GB VRAM | Linux | @kylefoxaustin |
+| RTX 5090 | 740M (d24) | 57k | 50 hours | 25GB VRAM | Linux | @kylefoxaustin |
+| RTX 8000 | 185M (d12) | 1.3k | 60-70 hours | 20GB VRAM | Linux | @kylefoxaustin |
+| CPU (Modern) | 64M | 770 | 4 hours (10k) | 3GB RAM | Windows 11 | @kylefoxaustin |
+| CPU (Modern) | 304M | 64 | 52 hours (100k) | 6GB RAM | Windows 11 | @kylefoxaustin |
+| *Your Hardware* | *Your results* | *PR welcome!* | | | | |
 
 ---
 
@@ -470,6 +596,7 @@ Current LLM policy: disclosure. When submitting a PR, please declare any parts t
 - Thank you to [HuggingFace](https://huggingface.co/) for fineweb and smoltalk.
 - Thank you [Lambda](https://lambda.ai/service/gpu-cloud) for the compute used in developing this project.
 - Thank you to chief LLM whisperer 🧙‍♂️ Alec Radford for advice/guidance.
+- Windows 11 CPU support and single-GPU optimizations by [@kylefoxaustin](https://github.com/kylefoxaustin)
 
 ## Cite
 
